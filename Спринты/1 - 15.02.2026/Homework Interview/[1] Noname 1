@@ -1,0 +1,27 @@
+# Задача №1 SQL
+Решение:
+Получится cte с 1 столбцом и 4 строками, где записаны числовые значения - 5 7 3 4
+Вывод запроса будет таким:
+
+SUM(tab.a) = 19
+COUNT(tab.a) = 4
+COUNT(*) = 4
+COUNT(DISTINCT tab.a) = 4
+MAX(tab.a) = 7
+MIN(tab.a) = 3
+
+# Задача №2 SQL
+
+with agg_data as (
+    select
+        date_trunc('month', created_at) created_month,
+        count(id) publish_cnt
+    from table
+    group by date_trunc('month', created_at)
+)
+
+select
+    created_month,
+    publish_cnt,
+    round((publish_cnt - lag(publish_cnt) over(order by created_month) / lag(publish_cnt) over(order by created_month) * 100), 2) prc_growth
+from agg_data

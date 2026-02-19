@@ -1,0 +1,53 @@
+# Задача №1 (SQL)
+
+INNER JOIN - 2
+LEFT JOIN - 3
+FULL OUTER JOIN - 5
+
+# Задача №2 (SQL)
+
+SELECT DISTINCT
+FROM
+JOIN
+WHERE
+GROUP BY
+HAVING
+ORDER BY
+LIMIT / OFFSET
+UNION
+
+# Задача №3 (SQL)
+
+with lag_data as (
+    select
+        good_id,
+        inventory_dt,
+        inventory_cnt,
+        lag(inventory_cnt) over(partition by good_id order by inventory_dt) as last_cnt
+    from inventory
+)
+
+select
+    good_id,
+    inventory_dt,
+    last_cnt - inventory_cnt as cnt_diff
+from lag_data
+where last_cnt - inventory_cnt != 0
+
+# Задача №4 (Python)
+
+def rgb_sort(color_list):
+    red_list, green_list, blue_list = [], [], []
+    for i in color_list:
+        if i.startswith('r'):
+            red_list.append(i)
+        elif i.startswith('g'):
+            green_list.append(i)
+        elif i.startswith('b'):
+            blue_list.append(i)
+    red_list.sort()
+    green_list.sort()
+    blue_list.sort()
+
+    return red_list + green_list + blue_list
+
