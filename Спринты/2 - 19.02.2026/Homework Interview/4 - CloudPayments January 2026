@@ -1,0 +1,53 @@
+# Задача №1 (SQL)
+
+select
+    id,
+    lastname
+from students s
+join marks m
+    on s.id = m.student_id
+group by id, lastname
+having min(mark) > 3
+
+# Задача №2 (SQL)
+
+with succ_transactions as (
+    select
+        m.id,
+        m.name,
+        mt.date_trans,
+        mt.amount
+    from merchant m
+    join merch_transactions mt
+        on m.id = mt.merch_id
+    where mt.type = 'Успешно'
+)
+
+select
+    id,
+    name,
+    sum(amount) sum_succ_transactions,
+    max(date_trans) last_transation_date
+from succ_transactions
+group by id, name
+
+# Задача №3 (Pandas)
+
+import pandas as pd 
+
+def top3_merchant(df_names, df_amounts):
+    df = pd.merge(df_names, df_amounts, on='scopeid')
+    agg_df = df.groupby(['scopeid', 'scope_name'], as_index=False).agg(sum_amount=('amount', 'sum')) \
+        .sort_values(by='sum_amount', ascending=False)
+    
+    return agg_df[['scopeid', 'scope_name']].head(3)
+
+# Задача №4 (Теовер / статистика)
+
+1) P(попасть в интервал блокировки) = 6/60
+2) Найдем среднее время ожидания при попадании в блокировку:
+    E = (0+1+2+3+4+5+6) / 7 = 3
+    Либо через равномерное распределение, тогда E = (0 + 6) / 2 = 3
+3) Найдем среднее время ожидания:
+    E = 0.9 * 0 + 0.1 * 3 = 3/10 (в минутах) = 18 в секундах.
+

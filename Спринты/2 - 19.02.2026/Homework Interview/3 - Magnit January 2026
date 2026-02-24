@@ -1,0 +1,90 @@
+# Задача №1 (SQL)
+
+select
+    date,
+    count(item_id) items_ordered,
+    count(distinct user_id) active_users
+from orders
+group date
+order by date
+
+
+# Задача №2 (SQL)
+
+with specific_users as (
+    select
+        user_id,
+        case
+            when item_id = 1 then 1 
+            else 0 
+        end item1_flag,
+        case
+            when item_id = 2 then 1 
+            else 0 
+        end item2_flag,
+        case
+            when item_id = 3 then 1 
+            else 0 
+        end item3_flag
+    from orders
+)
+
+select
+    user_id
+from specific_users
+group by user_id
+having max(item1_flag) = 1 and max(item2_flag) = 0 and max(item3_flag) = 1
+
+
+# Задача №3 (SQL)
+
+with detect_orders_order as (
+    select 
+        user_id,
+        date,
+        row_number() over (partition by user_id order by date) AS rn
+    from orders
+),
+
+first_second_orders as (
+    select
+        user_id,
+        max(case when rn = 1 then date) first_order,
+        max(case when rn = 2 then date) second_order
+    from detect_orders_order
+    group by user_id
+    having count(*) > 1)
+
+select
+    avg(datediff(day, first_order, second_order)) avg_days
+from first_second_orders
+
+
+# Задача №4 (Python)
+
+def median(nums):
+    nums.sort()
+    if len(nums) % 2 == 1:
+        return nums[len(nums) // 2]
+    else:
+        return (nums[len(nums) // 2 - 1] + nums[len(nums) // 2]) / 2
+        
+# Задача №5 (Python)
+
+def large_sub_string(chars):
+    if len(chars) <= 2:
+        return len(chars)
+    
+    left = 0
+    max_len = 0
+    char_count = {}
+    for right in range(len(chars)):
+        char_count[s[right]] = char_count.get(s[right], 0) + 1
+        while len(char_count) > 2:
+            char_count[s[left]] -= 1
+            if char_count[s[left]] == 0:
+                del char_count[s[left]]
+            left += 1
+        max_len = max(max_len, right - left + 1)
+        
+    return max_len
