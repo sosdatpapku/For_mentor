@@ -1,0 +1,72 @@
+#Задача №1 (SQL)
+
+select
+    t1.FullName EmpName,
+    t1.Salary,
+    t2.FullName ManagerName
+from employees t1
+join employees t2
+    on t1.ManagerId = t2.id
+where t1.Salary > t2.Salary
+
+#Задача №2 (SQL)
+
+with sum_calc as (
+    select
+        user_id,
+        order_dt,
+        sum(gmv) over(partition by user_id order by order_dt) cum_sum
+    from orders
+    where year(order_dt) = 2025
+)
+
+select
+    user_id,
+    min(order_dt) min_order_dt
+from sum_calc
+where cum_sum > 10000
+group by user_id
+
+#Задача №3 (SQL)
+
+with user_orders as (
+    select
+        u.user_id,
+        name,
+        count(order_id) orders_cnt
+    from users u
+    left join orders o 
+        on u.user_id = o.user_id   
+    group by u.user_id, name
+),
+
+rank_rows as (
+    select
+        user_id,
+        name,
+        orders_cnt,
+        percent_rank() over(order by orders_cnt desc) prc_rank
+    from user_orders
+)
+
+select
+    name
+from rank_rows
+where prc_rank <= 0.05
+
+#Задача №4 (Python)
+
+def sort_values(nums, target):
+    if target not in nums:
+        return [-1, -1]
+    
+    sort_nums = sorted(nums)
+    min_ind, max_ind = len(nums), 0
+
+    for i in range(len(sort_nums)):
+        if sort_nums[i] == target and i < min_ind:
+            min_ind = i
+        if sort_nums[i] == target and i >= max_ind:
+            max_ind = i
+    
+    return [min_ind, max_ind]

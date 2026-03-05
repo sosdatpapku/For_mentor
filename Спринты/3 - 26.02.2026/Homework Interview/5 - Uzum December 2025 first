@@ -1,0 +1,66 @@
+#Задача №1 (SQL)
+Сколько минимально и максимально будет выведено строк при inner join двух таблиц с 10 и 100 записями.
+
+Решение: минимум - 0, максимум - 10 * 100
+
+#Задача №2 (SQL)
+
+select
+    date_trunc('month', order_date) month,
+    c.title,
+    count(distinct order_id) order_cnt,
+    sum(price * quantity) gmv,
+    round((sum(price * quantity) * 1.0 / sum(price * quantity) over(partition by month(order_date))) * 100, 2) category_gmv_prc,
+    round(sum(case when payment_type = 'Prepaid' then 1 else 0 end) * 1.0 / count(*) * 100, 2) prepaid_prc
+from order_items o 
+join category_hierarchy ch 
+    on o.category_id_L3 = ch.category_id_L3
+join category c 
+    on ch.category_id_L1 = c.category_id
+group by date_trunc('month', order_date), c.title
+order by date_trunc('month', order_date)
+
+
+#Задача №3 (SQL)
+
+with client_with_second_order as (
+    select
+        customer_id
+    from order_items
+    group by customer_id
+    having count(distinct order_id) > 1
+)
+
+select
+    c.title,
+    round(count(distinct cwso.customer_id) * 1.0 / count(distinct o.customer_id) * 100, 2) client_with_second_order_prc
+from order_items o
+left join client_with_second_order cwso
+    on o.customer_id = cwso.customer_id
+join category_hierarchy ch 
+    on o.category_id_L3 = ch.category_id_L3
+join category c 
+    on ch.category_id_L1 = c.category_id
+group by c.title
+order by count(distinct cwso.customer_id) / count(distinct o.customer_id) desc
+limit 3
+
+#Задача №4 (Pandas)
+
+top_10 = search_data.groupby('query').agg(cnt=('query', 'count')).sort_values(by='cnt', ascending=False).head(10)
+
+#Задача №5 (Pandas)
+
+df = pd.merge(search_data, session_data, on='session_id')
+
+ios_users = df.query('platform == "IOS"').groupby('location').agg(users_cnt=('user_id', 'nunique'))
+
+#Задача №6 (Pandas)
+
+df = pd.merge(search_data, session_data, on='session_id')
+
+unique_users_with_shoes = df.query('query == "shoes"').groupby('platform').agg(users_cnt=('user_id', 'nunique'))
+
+total = df.groupby('platform').agg(users_cnt=('user_id', 'nunique'))
+
+result = (unique_users_with_shoes / total * 100).round(2).reset_index(name='share')
