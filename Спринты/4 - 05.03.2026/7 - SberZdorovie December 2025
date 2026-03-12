@@ -1,0 +1,103 @@
+#Задача №1 (SQL)
+
+with oct22_income as (
+    select
+        country_name,
+        sum(income) sum_income
+    from country c
+    join sales s 
+        on c.city = s.city
+    where format(date, 'yyyy-mm') = '2022-10'
+    group by country_name
+),
+
+oct23_income as (
+    select
+        country_name,
+        sum(income) sum_income
+    from country c
+    join sales s 
+        on c.city = s.city
+    where format(date, 'yyyy-mm') = '2023-10'
+    group by country_name
+)
+
+select
+    c23.country_name,
+    round(((c23.sum_income - c22.sum_income) * 1.0 / c22.sum_income) * 100, 2) income_diff
+from oct23_income c23
+join oct22_income c22
+    on c23.country_name = c22.country_name
+
+#Задача №2 (SQL)
+
+with week_dates as (
+    select 
+        event_uuid,
+        DATEADD(week, DATEDIFF(week, 0, ts), 0) week_start,
+        user_id,
+        event_name
+    from event_log
+),
+
+cohort_install as (
+    select
+        user_id,
+        min(week_start) cohort_week
+    from week_dates
+    where event_name = 'Install'
+    group by user_id
+),
+
+cohort_consult as (
+    select
+        user_id,
+        min(week_start) cohort_week
+    from week_dates
+    where event_name = 'Consultation'
+    group by user_id
+), 
+cohort_size as (
+    select
+        cohort_week,
+        count(user_id) total_users
+    from cohort_install
+    group by cohort_week
+)
+
+select
+    ci.cohort_week first_install_cohort,
+    datediff(week, ci.cohort_week, cc.consult_week) weeks_diff,
+    cs.total_users first_install_user_cnt,
+    count(cc.user_id) consult_users_in_this_week
+from cohort_install ci
+left join cohort_consult cc 
+    on ci.user_id = cc.user_id
+join cohort_size cs 
+    on ci.cohort_week = cs.cohort_week
+group by ci.cohort_week, cs.total_users, datediff(week, ci.cohort_week, cc.consult_week)
+order by ci.cohort_week, weeks_diff;
+
+
+#Задача №3 (Pandas)
+
+Что делает df['col'] = df['col'].map(lambda x: 1 if x=='test' else 0)?
+Ответ: к колонке col применяется функция заменяющая её значения на 1 или 0 по условию, т.е перезаписывает её.
+
+Что делает df = df.apply(lambda x: 1 if x['col']=='test' else 0, 1)?
+Ответ: к каждой строке датафрейме применяется функция заменяющая значения на 1 или 0 по условию, т.е возвращается серия из 0 и 1 и перезаписывается в переменную df
+
+#Задача №4 (Python)
+
+Что делает sorted(zip([123, 124, 125], ['Max', 'Alex', 'Ilya']), key=lambda x: x[1], reverse=True)
+Ответ: создастся список кортежей из пар число и имя, значения списка будут отсортированы по значению имени в обратном лексиграфическом порядке 
+
+#Задача №5 (Pandas)
+
+df = pd.read_csv('path/')
+df['check_sum'] = df['price'] * df['amount']
+agg_df = df.groupby('store', as_index=False).agg(sum_overall=('check_sum', 'sum'), avg_price=('price', 'mean'), uniq_items=('item', 'nunique'))
+
+#Задача №6 (Матстат)
+Ответ: что произойдет со средним чеком зависит от распределения кол-ва покупок в упомянутых каналах продаж - он может и вырасти, и остаться неизменным (относительно пред.периода), и упасть.
+Это случай парадокса Симпсона

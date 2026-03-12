@@ -1,0 +1,95 @@
+#Задача №1 (SQL)
+
+with calc_df (
+select
+    rti.store_id,
+    ds.store_name,
+    rti.goods_id,
+    dg.goods_name,
+    sum(rto_sum) total_rto
+from rtl_txn_item rti
+join dim_stores ds
+    on rti.store_id = ds.store_id
+join dim_goods dg
+    on rti.goods_id = dg.goods_id
+where rtl_txn_dt between '2025-10-01' and '2025-11-20'
+group by rti.store_id, ds.store_name, rti.goods_id, dg.goods_name
+),
+
+rank_df as (
+select *,
+    dense_rank() over(partition by store_id, store_name order by total_rto desc) rank_in_store
+from calc_df
+)
+
+select *
+from rank_df
+where rank_in_store <= 3
+order by store_id, rank_in_store
+
+#Задача №2 (SQL)
+with receipt_agg as (
+    select
+        store_id,
+        rtl_id,
+        sum(rto_qnt) as items_in_receipt
+    from rtl_txn_item
+    group by store_id, rtl_id
+)
+select
+    ra.store_id,
+    ds.store_name,
+    ds.city,
+    count(distinct ra.rtl_id) unique_receipts,
+    sum(ra.items_in_receipt) sum_qnt,
+    avg(ra.items_in_receipt) avg_qnt
+from receipt_agg ra
+join dim_stores ds on ra.store_id = ds.store_id
+group by ra.store_id, ds.store_name, ds.city
+order by count(distinct ra.rtl_id) desc
+
+#Задача №3 (Теорвер)
+Решение:
+Наибольшее количество кубиков, которое одновременно является полным квадратом и полным кубом 
+    (то есть шестой степенью целого числа) и не превышает 100, равно 64 = 8 ** 2 = 4 ** 3
+
+#Задача №4 (Python)
+
+def find_max_stonks(items, budget):
+    max_stonks = 0
+    for i in items:
+        if i['purchase_price'] <= budget:
+            profit = i['purchase_price'] - i['sell_price']
+            if profit > max_stonks:
+                max_stonks = profit
+    
+    return max_stonks
+
+
+#Задача №5 (Pandas)
+
+sales['sale_date'] = pd.to_datetime(sales['sale_date'])
+
+sales_oct = sales[sales['sale_date'].between('2025-10-01', '2025-10-31')]
+
+sales_with_goods = sales_oct.merge(goods[['goods_id', 'category']], on='goods_id', how='left')
+
+sales_with_stores = sales_with_goods.merge(stores[['store_id', 'store_name']], on='store_id', how='left')
+
+check_rev = sales_with_stores.groupby('transaction_id')['revenue'].sum().reset_index(name='check_total')
+
+df = sales_with_stores.merge(check_rev, on='transaction_id', how='left')
+
+agg_df1 = df.groupby(['store_id', 'store_name', 'category'], as_index=False).agg(
+    total_revenue=('revenue', 'sum'),
+    total_quantity=('quantity', 'sum'))
+
+unique_checks = df[['store_id', 'category', 'transaction_id', 'check_total']].drop_duplicates()
+avg_check_df = unique_checks.groupby(['store_id', 'category'])['check_total'].mean().reset_index(name='avg_check')
+
+result = agg_df1.merge(avg_check_df, on=['store_id', 'category'], how='left')
+
+result = result.sort_values(by=['total_revenue', 'category'], ascending=[False, True])
+
+
+

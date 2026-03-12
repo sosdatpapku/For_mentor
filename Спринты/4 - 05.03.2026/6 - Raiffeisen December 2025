@@ -1,0 +1,76 @@
+#Задача №1 (SQL)
+# Первый вариант
+with user_country_sum as (
+    select
+        user_id,
+        country_id,
+        sum(order_sum) user_sum
+    from orders
+    where order_success = 1
+    group by user_id, country_id
+    ),
+
+by_country_sum as (
+    select
+        country_id,
+        sum(order_sum) country_sum
+    from orders
+    where order_success = 1
+    group by country_id
+)
+
+select
+    ucs.user_id,
+    ucs.country_id,
+    user_sum * 1.0 / country_sum
+from user_country_sum ucs
+join by_country_sum bcs
+    on ucs.country_id = bcs.country_id
+
+# Второй вариант
+WITH user_sums AS (
+    SELECT
+        user_id,
+        country_id,
+        SUM(order_sum) AS user_sum
+    FROM orders
+    WHERE order_success = 1
+    GROUP BY user_id, country_id
+)
+SELECT
+    user_id,
+    country_id,
+    user_sum * 1.0 / SUM(user_sum) OVER (PARTITION BY country_id) AS ratio
+FROM user_sums
+
+#Задача №2 (Python)
+Что происходит с памятью в питоне?
+a = [1, 2, 3]
+b = a
+a[0] = 2
+print(b)
+
+Ответ: вывод будет [2, 2, 3], т.к в питоне ссылочная модель памяти (b = a - ссылка на первичный объект "a", поэтому изменения затронут обе переменные).
+
+#Задача №3 (Python)
+
+def find_1_2_max(l):
+    if len(l) < 2:
+        return l[0], None
+
+    first_max, sec_max = float('-inf'), float('-inf')
+
+    for i in l:
+        if i > first_max:
+            sec_max = first_max
+            first_max = i
+        elif i > sec_max:
+            sec_max = i
+    return first_max, sec_max
+
+#Задача №4 (Pandas)
+
+1) agg_df = df.groupby('id', as_index=False).agg(sum_volume=('volume','sum'))
+
+2) user_order_cnt = df.groupby('id', as_index=False).agg(order_cnt=('volume','count'))
+user_order_cnt['rate'] = user_order_cnt['order_cnt'] / len(df)

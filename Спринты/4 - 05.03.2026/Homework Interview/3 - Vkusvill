@@ -1,0 +1,65 @@
+#Задача №1 (SQL)
+
+with month_flags as (
+    select
+        format(order_date, 'yyyy-mm') as order_date,
+        order_id,
+        user_id,
+        order_price,
+        first_value(format(order_date, 'yyyy-mm')) over(partition by user_id order by order_date desc) last_user_month
+    from orders
+),
+
+last_month_revenue as (
+    select
+        user_id,
+        last_user_month,
+        sum(order_price) last_month_buys
+    from month_flags
+    group by user_id, last_user_month
+),
+
+pre_last_month_revenue as (
+    select
+        user_id,
+        order_date,
+        sum(order_price) pre_last_month_buys
+    from month_flags
+    where datediff(month, order_date, last_user_month) = 1
+    group by user_id, order_date
+),
+
+select
+    sum(last_month_buys) total_sum
+from last_month_revenue lmr
+join pre_last_month_revenue plmr
+    on lmr.user_id = plmr.user_id
+where last_month_buys > pre_last_month_buys
+
+#Задача №2 (Python)
+
+def find_products_below_threshold(threshold, sales_data):
+    revenue = {}
+    for entry in sales_data:
+        item = entry[0]
+        pid = item['product_id']
+        qty = item['qnt']
+        price = item['price']
+        revenue[pid] = revenue.get(pid, 0) + qty * price
+
+    return [pid for pid, rev in revenue.items() if rev < threshold]
+
+#Задача №3 (Теорвер)
+
+p = 0.04
+q = 0.96
+
+P(показать ровно 1 товар на 100 в выдаче) = С(1, 100) * 0.04 ** 1 * 0.96 ** 99 = 0.0707
+
+#Задача №4 (Кейс)
+
+Могут появиться проблемы при аб-тесте этой фичи:
+1) Негативная реакция на товары с истекающим сроком: некоторые покупатели могут отказаться от покупки, узнав о близком сроке годности, что снизит средний чек.
+Решение: чётко указывать оставшийся срок, возможно, предлагать гарантию или возможность возврата; также можно сегментировать аудиторию (например, для экономных покупателей это плюс).
+2) Каннибализация продаж обычных товаров: если подсветка слишком привлекает внимание, пользователи могут переключиться на товары со скидкой вместо полноценных, снижая средний чек и маржу.
+Решение: отслеживать метрики (средний чек, доля промо-товаров, общая выручка) в A/B-тесте; при негативном эффекте корректировать стратегию (например, ограничить количество показов).

@@ -1,0 +1,95 @@
+#Задача №1 (SQL)
+
+SELECT
+    user_id
+FROM views
+GROUP BY user_id
+HAVING SUM(CASE WHEN video_id = 1 THEN 1 ELSE 0 END) > 0
+    AND SUM(CASE WHEN video_id = 2 THEN 1 ELSE 0 END) = 0
+    AND SUM(CASE WHEN video_id = 3 THEN 1 ELSE 0 END) > 0
+
+#Задача №2 (SQL)
+
+WITH month_dates AS (
+    SELECT DISTINCT
+        user_id,
+        DATE_TRUNC('month', paid_at) AS paid_month
+    FROM transactions
+),
+cohort_calc AS (
+    SELECT
+        user_id,
+        MIN(paid_month) AS cohort_month
+    FROM month_dates
+    GROUP BY user_id
+)
+SELECT
+    c.cohort_month,
+    DATEADD(month, 1, c.cohort_month) AS next_month,
+    COUNT(DISTINCT c.user_id) AS cohort_users,
+    COUNT(DISTINCT CASE WHEN m.user_id IS NOT NULL THEN c.user_id END) AS returned_users,
+    COUNT(DISTINCT CASE WHEN m.user_id IS NOT NULL THEN c.user_id END) * 1.0 
+        / COUNT(DISTINCT c.user_id) AS retention_rate
+FROM cohort_calc c
+LEFT JOIN month_dates m 
+    ON c.user_id = m.user_id 
+    AND m.paid_month = DATEADD(month, 1, c.cohort_month)
+GROUP BY c.cohort_month
+ORDER BY c.cohort_month
+
+#Задача №3 (Метрики)
+
+Решение:
+Маркетинг: клики, показы, CR, C1, CTR, CPA, CPI, CPO, CAC, ROI.
+Операции: среднее время доставки, SLA по времени доставки, кол-во курьеров / кол-во заказов, cancel rate, траты на логистику на заказ = зп курьерам + аренда склада + упаковка / кол-во заказов
+Продукт: LTV, Lifetime, Retention, AOV, ARPU, PU, CR
+Финансы: GMV, Revenue, ARPPU, CM, COGS, EBITDA, LTV / CAC.
+
+#Задача №4 (Pandas)
+
+1) Метод DataFrame.apply — чем он отличается от «обычной функции» / циклов.
+Ответ: применяется ко всем строкам / полям датафрейма сразу, удобнее и чем простой цикл + используются внутренние оптимизации pandas
+Почему в Pandas неэффективно итерироваться по строкам в явных циклах.
+Ответ: задействуется логика python, которая в сыром виде не адаптирована для векторных опираций с массивами - отсутствует оптимизация памятиб доп.интерпретация типов на каждой операции.
+Какие есть способы фильтрации DataFrame.
+Ответ: булева маска, метод query, isna, isin, loc и iloc, метод filter
+
+#Задача №5 (Clickhouse)
+
+1) Чем ClickHouse отличается от транзакционных СУБД.
+Ответ: клик - колончатая БД, созданная для аналитических запросов, в ней нет транзакций отдельных строк. Данные хранятся в сжатом виде, т.к значения одного типа хранятся рядом.
+
+2) Какие движки используются.
+Из эталонного ответа:
+MergeTree — базовый движок для хранения сырых данных.
+ReplacingMergeTree — позволяет «заменять» записи при слиянии партиций по ключу.
+SummingMergeTree — агрегирует числовые поля по ключу.
+AggregatingMergeTree — хранит агрегатные состояния.
+
+3) Как обновлять данные за последние N дней (когда данные «Переехали» или поменялись).
+Из эталонного ответа:
+
+Типичный подход:
+
+Хранить таблицу с партиционированием по дате (например, по дню).
+При изменении данных за последние N дней:
+либо выполнить ALTER TABLE ... DELETE WHERE date BETWEEN ..., затем заново вставить «правильные» данные за эти даты;
+либо использовать таблицу ReplacingMergeTree и писать новые версии строк с большим version.
+Обновление обычно выполняет инженер данных / пайплайн, а не вручную аналитик.
+-- Пример структуры таблицы
+CREATE TABLE example (
+    event_date Date,
+    user_id    UInt32,
+    revenue    Float64
+)
+ENGINE = MergeTree()
+PARTITION BY toYYYYMM(event_date)
+ORDER BY (event_date, user_id);
+
+-- Перезаливка последних 2 дней
+ALTER TABLE example
+    DELETE WHERE event_date >= today() - 2;
+
+INSERT INTO example
+SELECT * FROM staging_example
+WHERE event_date >= today() - 2;
