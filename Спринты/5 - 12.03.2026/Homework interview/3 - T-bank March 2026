@@ -1,0 +1,126 @@
+#Задача №1 (Теорвер)
+Предлагается сыграть в игру: бросается честный шестигранный кубик, выигрыш равен выпавшему числу. После первого броска кубик можно перебросить ровно один раз,
+    и тогда засчитывается только результат второго броска. Нужно определить оптимальную стратегию и математическое ожидание выигрыша.
+
+Решение:
+1) В случае, если при первом броске выпало < 4, то перебрасываем кубик и забираем,
+    иначе забираем выигрыш после первого броска.
+2) Матожидание стратегии = Вероятность первого исхода * Матожидание первого исхода + Вероятность второго исхода * Матожидание второго исхода
+Матожидание первого исхода = ((1+2+3+4+5+6) / 6 + (1+2+3+4+5+6) / 6) / 2 = 3.5
+Матожидание второго исхода = (4+5+6) / 3 = 5
+Матожидание стратегии = 0.5 * 3.5 + 0.5 * 5 = 4.25
+
+#Задача №2 (АБ-тест)
+Коллеги провели эксперимент, нужно сравнить две группы и подобрать статистический критерий для разных метрик:
+1) рост / значение в сантиметрах;
+Предположу что рост скорее будет распределен близко к нормальному и выборки независимы.
+    Тогда подойдет t-test, если дисперсии одинаковы. Или t-test Уэлча, в противном случае.
+2) конверсия из просмотра объявления в клик, при этом каждый уникальный пользователь видит объявление один раз;
+Для независимых выборок - z-test, хи-квадрат Пирсона
+3) среднее время сессии пользователя за неделю.
+Это ratio-метрика, применяем линеризацию, а потом t-test. Либо же бутстреп.
+
+#Задача №3 (АБ-тест)
+Нужно объяснить, что такое доверительный интервал, не только через проверку гипотез, но и как самостоятельный инструмент интерпретации результата.
+
+Ответ: ДИ - это интервал, в котором с заданной вероятностью (1 - alpha)% находится истинное значение параметра. 
+    Это означает, что если мы много раз будем строить такие интервалы по разным выборкам, то в (1-alpha)% случаев они будут содержать истинное значение параметра.
+
+#Задача №4 (SQL)
+По таблице событий нужно вывести последнюю запись по полю datetime для каждого пользователя. В ходе обсуждения отдельно поднимался вопрос про дубликаты на одном и том же максимальном времени.
+with rn_actions as (
+    select
+        user_id,
+        dttm,
+        action,
+        rank() over(partition by user_id order by dttm desc) rn
+    from user_logs
+)
+
+select
+    user_id,
+    dttm,
+    action
+from rn_actions
+where rn = 1
+
+#Задача №5 (SQL)
+Формулировка в транскрибации частично шумная, но по обсуждению задача восстанавливается так:
+    нужно для пользователей посчитать среднюю длительность сессии в феврале и присоединить флаг, был ли у пользователя хотя бы один успешный заказ в марте.
+
+with feb_sessions as (
+    select
+        user_id,
+        session_id,
+        min(dttm) session_start,
+        max(dttm) session_end
+    from events
+    where dttm >= '2026-02-01' and dttm < '2026-03-01'
+    group by user_id, session_id
+),
+feb_session_dur as (
+    select
+        user_id,
+        session_id,
+        datediff(second, session_end, session_start) session_duration
+    from feb_sessions
+),
+
+feb_session_dur_avg as (
+    select
+        user_id,
+        avg(session_duration) avg_session_duration
+    from feb_session_dur
+    group by user_id
+),
+
+mar_orders as (
+    select distinct
+        user_id,
+        1 success_order
+    from orders
+    where dttm >= '2026-03-01' and dttm < '2026-04-01'
+        and is_success = 1
+)
+
+select
+    fsda.user_id,
+    fsda.avg_session_duration,
+    coalesce(mo.success_order, 0) success_order_in_march
+from feb_session_dur_avg fsda
+left join mar_orders mo
+    on fsda.user_id = mo.user_id
+
+#Задача №6 (Python)
+Нужно написать базовую функцию, которая определяет, является ли число простым. В разговоре отдельно обсуждался кейс с единицей.
+
+def is_prime(n):
+    if n < 2:
+        return False
+    for i in range(2, int(n ** 0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+
+#Задача №7 (Pandas)
+найти покупателей с наибольшим количеством покупок за последний день в данных;
+посчитать средний чек / среднюю сумму покупки для каждого клиента.
+
+import pandas as pd
+
+# предполагаем, что есть колонки:
+# customer_id, purchase_date, purchase_amount
+
+df['purchase_date'] = pd.to_datetime(df['purchase_date'])
+
+last_date = df['purchase_date'].max()
+
+last_date_df = df.loc[df['purchase_date'] == last_date]
+
+top_customers = last_date_df.groupby('customer_id', as_index=False).agg(orders_cnt=('customer_id', 'count')).sort_values(by='orders_cnt', ascending=False)
+
+avg_check_by_customer = df.groupby('customer_id', as_index=False).agg(aov=('purchase_amount', 'mean'))
+
+
+
+

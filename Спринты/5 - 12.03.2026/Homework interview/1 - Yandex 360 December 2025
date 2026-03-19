@@ -1,0 +1,103 @@
+#Задача №1 (SQL)
+
+with prev_action as (
+    select
+        is_active,
+        msk_date,
+        lag(is_active) over(order by msk_date) prev_active
+    from table
+)
+
+select
+    min(msk_date) last_activation
+from prev_action
+where is_active = 1 and prev_active = 0
+
+#Задача №2 (SQL)
+
+select
+    customer_id,
+    sum(purchase_amount) sum_amount
+from sales
+where year(msk_date) = 2023
+group by customer_id
+having sum(purchase_amount) > 1000
+order by sum(purchase_amount) desc
+limit 10
+
+
+#Задача №3 (SQL)
+
+with agg_data as (
+    select
+        customer_id,
+        msk_date,
+        sum(purchase_amount) day_sum_amount
+    from sales
+    group by customer_id, msk_date
+)
+
+select
+    *,
+    sum(day_sum_amount) over(partition by customer_id, year(msk_date) order by msk_date) running_total_year
+    max(day_sum_amount) over(partition by customer_id, year(msk_date)) year_max_amount
+from agg_data
+order by customer_id, msk_date
+
+#Задача №4 (SQL)
+
+with 21_income as (
+    select
+        name,
+        sum(value) sum_income
+    from table
+    where year(date) = 2021
+    group by name
+),
+
+22_income as (
+    select
+        name,
+        sum(value) sum_income
+    from table
+    where year(date) = 2022
+    group by name
+)
+
+select
+    c22.country_name,
+    round(((c22.sum_income - c21.sum_income) * 1.0 / c21.sum_income) * 100, 2) income_diff
+from 22_income c22
+join 21_income c21
+    on c22.country_name = c21.country_name
+
+#Задача №5 (SQL)
+
+with month_dates as (
+    select
+        user_id,
+        reg_date
+        format(reg_date, 'yyyy-mm') reg_month
+    from table_1
+),
+
+orders_30_d as (
+    select distinct
+        md.user_id,
+        md.reg_month
+    from month_dates md
+    join table_2 t2
+        on md.user_id = t2.user_id
+    where t2.msk_date >= md.reg_date
+        and t2.msk_date < dateadd(day, 30, reg_date)
+)
+
+select
+    md.reg_month,
+    count(distinct md.user_id) cohort_users,
+    count(distinct o.user_id) order_in_next_month_cnt
+from month_dates md
+left join orders_30_d o
+    on md.user_id = o.user_id
+group by md.reg_month
+order by md.reg_month

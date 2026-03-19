@@ -1,0 +1,144 @@
+#Задача №1 (SQL)
+1)Дана таблица "Employees" с полями: "EmployeeID", "FirstName", "LastName".
+Найдите всех сотрудников, у которых есть одинаковые имена и фамилии (дубликаты).
+
+with dup_names as (
+    select
+        FirstName + ' ' + LastName FullName,
+        count(*)
+    from Employees
+    group by FirstName + ' ' + LastName
+    having count(*) > 1
+)
+
+select
+    EmployeeID,
+    FirstName + ' ' + LastName
+from Employees
+where FirstName + ' ' + LastName in (select FullName from dup_names)
+
+#Задача №2 (SQL)
+2)Дана таблица "Orders" с полями: "OrderID" и "OrderDate".
+Найдите среднее количество заказов в месяц за весь период данных.
+
+with month_dates as (
+    select
+        format(OrderDate, 'yyyy-mm') as order_month
+        count(OrderID) orders_cnt
+    from Orders
+    group by format(OrderDate, 'yyyy-mm')
+)
+
+select
+    avg(orders_cnt) avg_orders_in_period
+from month_dates
+
+#Задача №3 (SQL)
+3)Дана таблица "Products" с полями: "ProductID", "ProductName", "UnitPrice".
+Ранжируйте продукты по цене в порядке убывания.
+
+select
+    ProductID,
+    ProductName,
+    UnitPrice,
+    row_number() over(order by UnitPrice desc) rank
+from Products
+order by rank
+
+#Задача №4 (SQL)
+4)Даны таблицы "Customers" и "Orders" с полями: "CustomerID" (в обеих таблицах),
+"OrderID" и "OrderDate".
+Найдите клиента, у которого самый длинный интервал между его заказами.
+
+with customer_stat as (
+    select
+        o.CustomerID,
+        min(o.OrderDate) min_order_date,
+        max(o.OrderDate) max_order_date
+    from Orders o
+    group by o.CustomerID
+)
+
+select
+    CustomerID,
+    datediff(day, max_order_date, min_order_date) orders_date_diff
+from customer_stat
+order by datediff(day, max_order_date, min_order_date) desc
+limit 1
+
+#Задача №5 (SQL)
+5)Дана таблица "Employees" с полями: "EmployeeID", "FirstName", "LastName", "Salary",
+"DepartmentID". Выведите всех сотрудников, чья зарплата выше средней зарплаты по их
+отделу.
+
+with avg_dept_sal_stat as (
+    select
+        DepartmentID,
+        avg(Salary) avg_dept_sal
+    from Employees
+    group by DepartmentID
+)
+
+select
+    EmployeeID,
+    FirstName,
+    LastName,
+    Salary
+from Employees e
+join avg_dept_sal_stat adss
+    on e.DepartmentID = adss.DepartmentID
+where Salary > avg_dept_sal
+
+#Задача №6 (SQL)
+6)Дана таблица "Employees" с полями: "EmployeeID" и "ManagerID"
+(где ManagerID указывает на EmployeeID руководителя).
+Найдите всех сотрудников и их непосредственных руководителей.
+
+select
+    e.EmployeeID,
+    e.EmployeeName,
+    m.EmployeeID,
+    m.EmployeeName
+from Employees e
+left join Employees m
+    on e.ManagerID = m.EmployeeID
+
+#Задача №7 (SQL)
+7)Даны таблицы "PlanRevenue" и "FactRevenue" с полями: "Date", "Value".
+Посчитайте месячное процентное отклонение фактических значений от плановых
+за весь период данных.
+
+with plan_agg as (
+    select
+        format(Date, 'yyyy-mm') month_date,
+        sum(Value) sum_value
+    from PlanRevenue
+    group by format(Date, 'yyyy-mm')
+),
+
+fact_agg as (
+    select
+        format(Date, 'yyyy-mm') month_date,
+        sum(Value) sum_value
+    from FactRevenue
+    group by format(Date, 'yyyy-mm')
+)
+
+select
+    f.month_date,
+    round(((coalesce(f.sum_value, 0) - coalesce(p.sum_value, 0)) * 1.0 / nullif(p.sum_value, 0)) * 100, 2) value_diff_prc
+from fact_agg f
+join plan_agg p
+    on f.month_date = p.month_date
+
+
+#Задача №8 (Python)
+
+def gcd(a, b):
+    orig_a, orig_b = a, b
+    while b:
+        a, b = b, a % b
+    res_gcd = a
+    lcm = 0 if res_gcd == 0 else (orig_a // res_gcd) * orig_b
+    return res_gcd, lcm
+        

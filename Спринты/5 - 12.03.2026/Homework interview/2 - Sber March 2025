@@ -1,0 +1,80 @@
+#Задача №1 (SQL)
+
+with agg_data as (
+    select
+        cl.client_id,
+        cl.first_name,
+        cl.last_name,
+        count(cr.credit_id) credits_cnt,
+        sum(cr.amount) credits_sum
+    from clients cl 
+    left join credits cr
+        on cl.client_id = cr.client_id
+    group by cl.client_id, cl.first_name, cl.last_name
+)
+
+select
+    first_name + ' ' + last_name client_name,
+    credits_cnt,
+    credits_sum
+from agg_data
+order by credits_sum desc
+limit 3
+
+#Задача №2 (SQL)
+
+select
+    cl.client_id,
+    cl.last_name + ' ' + cl.first_name full_name
+from clients cl 
+join credits cr
+    on cl.client_id = cr.client_id
+join payments p 
+    on cr.credit_id = p.credit_id
+where p.scheduled_date < '2026-01-01'
+group by cl.client_id, cl.last_name + ' ' + cl.first_name
+having count(*) = count(p.actual_date)
+order by cl.last_name desc
+
+#Задача №3 (SQL)
+
+with dept_stat as (
+    select
+        cr.client_id,
+        min(p.scheduled_date) debt_min_date,
+        sum(p.amount) debt_sum
+    from credits cr
+    join payments p
+        on cr.credit_id = p.credit_id
+    where p.scheduled_date < '2026-01-01' and p.actual_date is null
+    group by cr.client_id
+),
+
+comm_after_first_overdue as (
+    select
+        com.client_id,
+        count(com.communication_id) total_comm,
+        sum(com.success) success_comm
+    from communications com
+    join dept_stat ds
+        on com.client_id = dt.client_id
+    where com.date >= ds.debt_min_date
+    group by com.client_id
+)
+
+select
+    cl.client_id,
+    cl.last_name + ' ' + cl.first_name full_name,
+    ds.debt_min_date,
+    ds.debt_sum,
+    coalesce(cafo.total_comm, 0) total_comm,
+    case when coalesce(cafo.total_comm, 0) > 0
+        then round(success_comm * 1.0 / cafo.total_comm * 100, 2)
+        else 0
+    end succ_com_rate
+from clients cl 
+join dept_stat ds
+    on cl.client_id = ds.client_id
+left join comm_after_first_overdue cafo
+    on cl.client_id = cafo.client_id
+order by sum(ds.debt_sum) desc

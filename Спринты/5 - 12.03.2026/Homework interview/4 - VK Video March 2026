@@ -1,0 +1,49 @@
+#Задача №1 (SQL)
+
+select
+    campaing_id,
+    event_type,
+    count(event_id) event_cnt
+from ads a
+left join events e
+    on a.ad_id = e.ad_id
+group by campaing_id, event_type
+
+#Задача №2 (SQL)
+
+select
+    campaing_id,
+    round(sum(case when event_type = 'click' then 1 else 0 end) * 1.0 / nullif(sum(case when event_type = 'impression' then 1 else 0 end) * 100, 0), 2) ctr
+from ads a
+left join events e
+    on a.ad_id = e.ad_id
+group by campaing_id
+
+#Задача №3 (SQL)
+
+select
+    member_id,
+    points
+    dense_rank() over(order by points) rank
+from competitors
+
+#Задача №4 (Python)
+
+def rle(s):
+    if s == '':
+        return ''
+    res = []
+    i = 0
+    n = len(s)
+    while i < n:
+        char = s[i]
+        j = i
+        while j < n and s[j] == char:
+            j += 1
+        count = j - i
+        res.append(char)
+        if count > 1:
+            res.append(str(count))
+        i = j
+    return ''.join(res)
+
