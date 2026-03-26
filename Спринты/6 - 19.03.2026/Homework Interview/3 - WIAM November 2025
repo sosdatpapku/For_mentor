@@ -1,0 +1,30 @@
+#Задача №1 (SQL)
+
+select
+    c.customer_id,
+    c.first_name + ' ' + c.last_name full_nameб
+    c.email,
+    count(order_id) total_orders,
+    sum(total_amount) total_spend
+from customers c
+join orders o
+    on c.customer_id = o.customer_id
+where o.order_date >= dateadd(month, -6, getdate())
+group by c.customer_id, c.first_name + ' ' + c.last_name, c.email
+order by sum(total_amount) desc
+limit 5
+
+#Задача №2 (SQL)
+
+def odd_numbers():
+    res = []
+    for i in range(1, 101):
+        if i % 3 == 0 and i % 5 == 0:
+            res.append('FizzBuzz')
+        elif i % 3 == 0:
+            res.append('Fizz')
+        elif i % 5 == 0:
+            res.append('Buzz')
+        else:
+            res.append(i)
+    return res

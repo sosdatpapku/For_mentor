@@ -1,0 +1,67 @@
+#Задача №1 (SQL)
+
+with loan_stat as (
+    select
+        c.client_id,
+        c.gender,
+        l.loan_id,
+        l.loan_date,
+        row_number() over(partition by c.client_id order by l.loan_date) loan_rank
+    from clients c
+    left join loans l
+        on c.client_id = l.client_id
+    where l.loan_date between '2022-10-01' and '2022-10-31'
+)
+
+select
+    gender,
+    isnull([1], 0) rank1,
+    isnull([2], 0) rank2,
+    isnull([3], 0) rank3,
+    isnull([4], 0) rank4
+from (
+    select 
+        gender,
+        loan_rank
+    from loan_stat
+    where loan_date between '2022-10-01' and '2022-10-31'
+        and loan_rank between 1 and 4
+) source_t
+pivot (
+    count(loan_rank)
+    for loan_rank_by_date in ([1], [2], [3], [4])
+) pivot_t;
+
+#Задача №2 (SQL)
+Нужно исправить запрос:
+
+Select
+    gender
+, ord
+, count(loan_id) as qnt
+(
+    select c.gender, loan_id, row_number() over(partition by c.client_id order by loan_id) as ord
+    from
+    LOANS_TABLE l
+    join CLIENTS_TABLE c on c.client_id = l.client_id
+    where eomonth(loan_date) = '2022-10-31'
+) a
+
+Решение:
+
+Select
+    gender,
+    ord,
+    count(loan_id) as qnt
+from
+(
+    select 
+        c.gender,
+        l.loan_id,
+        row_number() over(partition by c.client_id order by l.loan_date) as ord
+    from
+    LOANS_TABLE l
+    join CLIENTS_TABLE c on c.client_id = l.client_id
+    where eomonth(l.loan_date) = '2022-10-31'
+) loan_rank
+group by gender, ord

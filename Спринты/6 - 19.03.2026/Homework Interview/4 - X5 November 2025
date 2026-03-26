@@ -1,0 +1,35 @@
+#Задача №1 (Python)
+
+def group_anagram(words):
+    groups = {}
+    for word in words:
+        key = ''.join(sorted(word))
+        if key in groups:
+            groups[key].append(word)
+        else:
+            groups[key] = [word]
+    
+    return list(groups.values())
+
+
+#Задача №2 (SQL)
+with order_weight_calc as (
+    select
+    fs.client_id,
+    fs.sku_cnt * ds.weight order_weight
+from fact_sales fs
+join dim_sku ds
+    on fs.sku_id = ds.sku_id
+where fs.dttm >= dateadd(month, -1, getdate())
+)
+
+select
+    client_id
+from order_weight_calc 
+group by client_id
+having sum(order_weight) > 2
+
+#Задача №3 (Теорвер)
+
+P(3 парня) = С(3, 7) / C(3, 10) = 35 / 120 = 0.291
+        

@@ -1,0 +1,16 @@
+#Задача №1 (SQL) Сумма положительных и отрицательных значений
+
+select
+    sum(case when v > 0 then v) positiv_v_sum,
+    sum(case when v < 0 then v) negative_v_sum
+from values_table
+
+# Задача №2 (SQL) Группировка чисел по диапазонам
+
+select
+    floor(v / 1000) * 1000 range_start,
+    floor(v / 1000) * 1000 + 1000 range_to,
+    count(*)
+from values_table
+group by floor(v / 1000)
+order by floor(v / 1000)

@@ -1,0 +1,60 @@
+#Задача №1 (SQL)
+
+select 
+    count(distinct id) stud_cnt
+from students
+
+#Задача №2 (SQL)
+
+select
+    case when count(student_name) != count(distinct student_name) then True
+        else False
+    end result
+from students
+
+#Задача №3 (SQL)
+
+with stud_marks as (
+    select
+        s.student_id,
+        count(l.mark) marks_cnt
+    from students s 
+    join lessons l
+        on s.student_id = l.student_id
+    group by s.student_id
+)
+
+select
+    s.student_id,
+    coalesce(sm.marks_cnt, 0) marks_cnt
+from students s
+left join stud_marks sm
+    on s.student_id = sm.student_id
+
+#Задача №4 (SQL)
+
+with stud_marks as (
+    select distinct
+        s.student_id
+    from students s 
+    join lessons l
+        on s.student_id = l.student_id
+)
+
+select
+    s.student_id
+from students s
+left join stud_marks sm
+    on s.student_id = sm.student_id
+where sm.student_id is null
+
+#Задача №5 (SQL)
+
+Возможные ошибки в данных:
+1) Дубли id для student_id в students
+2) Наличие такого student_id в lessons, которого нет в students
+3) Наличие значения mark > 5 в lessons (если у нас пятибальная шкала)
+
+#Задача №6 (Python)
+
+df_filt = df['beta'].loc[df['alpha'] > 1].sum()
