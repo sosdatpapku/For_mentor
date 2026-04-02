@@ -1,0 +1,36 @@
+#Задача №1 (SQL)
+
+select name
+from table
+where lower(name) like '% %n%n'
+
+#Задача №2 (SQL)
+
+with first_order as (
+    select
+        user_id,
+        order_value,
+        row_number() over(partition by user_id order by ts) rn
+    from user_orders
+)
+
+select
+    user_id,
+    order_value
+from first_order
+where rn = 1
+
+#Задача №3 (Python)
+
+def max_x_x(nums):
+    if len(nums) < 2:
+        return False
+
+    sort_nums = sorted(nums)
+
+    return max(sort_nums[-1] * sort_nums[-2], sort_nums[0] * sort_nums[1])
+
+#Задача №4 (Статистика)
+
+Поскольку в ряду из 1000 чисел медиана - это среднее 500-го и 501-го элементов. При удалении любого числа новая медиана (500-й элемент в ряду из 999) становится либо 500-м,
+     либо 501-м исходным элементом. Поэтому 357 и 653 - это значения 500-го и 501-го элементов. Их среднее даёт исходную медиану: (357 + 653)/2 = 505.

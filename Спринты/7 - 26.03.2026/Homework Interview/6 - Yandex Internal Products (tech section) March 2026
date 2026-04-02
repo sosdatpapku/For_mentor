@@ -1,0 +1,45 @@
+#Задача №1 (SQL)
+1) Выведет имена и ЗП сотрудника у кого ЗП > 50000, отсортировав по ЗП в обратном порядке
+2) Выведет категории, среднюю цену в категории и кол-во продуктов в категории, где средняя цена в категории > 20 и stock > 0 и отсортирует по величине средней цены в обратном порядке
+
+#Задача №2 (SQL)
+
+with duplicates as (
+    select
+        id,
+        first_name,
+        last_name,
+        count(*) over(partition by first_name, last_name) names_cnt
+    from employee
+)
+
+select
+    id,
+    first_name,
+    last_name
+from duplicates
+where names_cnt > 1
+order by id
+
+#Задача №3 (Python)
+
+def find_largest(numbers):
+    if len(numbers) == 0:
+        return None
+
+    largest = float('-inf')
+    for number in numbers[1:]:
+        if number > largest:
+            largest = number
+    return largest
+
+#Задача №4 (Python)
+
+1) Код не выведет строку, а вызовет исключение ClientException с сообщением "Client has empty name"
+
+#Задача №5 (Кейс)
+
+1) Предложить создать стабильную витрину для аналитики и работать с ней при построении отчётов.
+2) Не работать с сырыми данными напрямую, предобратывать их чтобы не страдала логика в отчётах и дашбордах
+3) Настроить мониторинг смены полей, типов данных в источнике
+4) При поломке сохранять последние корретные данные, чтобы не ломались дашборды и отчёты

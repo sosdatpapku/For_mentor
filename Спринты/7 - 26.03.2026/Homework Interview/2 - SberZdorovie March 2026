@@ -1,0 +1,66 @@
+#Задача №1 (SQL)
+
+with user_first_purchase as (
+    select
+        user_id,
+        amount,
+        row_number() over(partition by user_id order by purchase_dt, transaction_id) rn
+    from transactions
+)
+
+select
+    avg(amount) avg_amount_first_purchase
+from user_first_purchase
+where rn = 1
+
+#Задача №2 (SQL)
+
+with user_act as (
+    select
+        user_id,
+        log_type,
+        dt,
+        lag(dt) over(partition by user_id, log_type order by dt) prev_dt
+    from event_log
+),
+
+groups as (
+    select
+        user_id,
+        log_type,
+        dt,
+        sum(case when prev_dt is null or dt - prev_dt > 1 then 1 else 0 end) over(partition by user_id, log_type order by dt) grp
+    from user_act
+)
+
+select
+    user_id,
+    log_type,
+    min(dt) start_period,
+    max(dt) end_period,
+    count(*) lenght
+from groups
+group by user_id, log_type, grp
+having count(*) >= 3
+order by user_id, log_type, min(dt)
+
+#Задача №3 (Python)
+
+sorted(
+    zip([61230930093, 123630960960, 123960132511], ['Maxim A.', 'Alexander P.', 'Ilya R.']),
+    key=lambda x: x[1], reverse=True)
+
+Код объединяет два списка в список кортежей и сортирует его по второму элементу кортежа (имени) в обратном алфавитном порядке
+
+#Задача №4 (Pandas)
+
+df['cost_spend'] = df['amount'] * df['price']
+agg_df = df.groupby('store', as_index=False).agg(sum_profit=('cost_spend', 'sum'))
+
+#Задача №5 (Кейс)
+
+1) Я бы разбил пользователей в когортах по географии, устройству, демографии и смотрел где относительное падение больше
+2) Возможно изменился ассортимент, исчезла часть важных товаров для пользователей, поэтому они ушли
+3) Возможно изменилось ценообразование, программа лояльности или промо-акций
+4) Изменился userflow - добавились доп. этапы до целевого действия
+5) Влияние внешних факторов - активность конкурентов, экономика страны

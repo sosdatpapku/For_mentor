@@ -1,0 +1,71 @@
+#Задача №1 (SQL)
+
+with calc_rev as (
+    select
+        hq_filial_id,
+        filial_id,
+        filial_name,
+        sum(revenue) sum_rev,
+    from filial
+    group by hq_filial_id, filial_id, filial_name
+),
+
+calc_rank as (
+    select *,
+        dense_rank() over(partition by hq_filial_id order by sum_rev desc) rank
+    from calc_rev
+)
+
+select
+    hq_filial_id,
+    filial_id,
+    filial_name,
+    sum_rev
+from calc_rank
+where rank < 3
+order by hq_filial_id, rank
+
+#Задача №2 (SQL)
+
+with hq as (
+    select 
+        filial_id,
+        revenue hq_revenue
+    from filial
+    where filial_id = hq_filial_id
+)
+select 
+    f.filial_id,
+    f.filial_name
+from filial f
+join hq 
+    on f.hq_filial_id = hq.filial_id
+where f.filial_id != f.hq_filial_id and f.revenue > hq.hq_revenue
+
+
+#Задача №3 (SQL)
+
+with hq_rev as (
+    select
+        hq_filial_id,
+        sum(rev)
+    from filial
+    group by hq_filial_id
+),
+
+filial_rev as (
+    select
+        filial_id,
+        filial_name,
+        hq_filial_id,
+        sum(revenue) sum_rev
+    from filial
+    group by filial_id, filial_name, hq_filial_id
+)
+
+select
+    fr.filial_id,
+    round((fr.sum_rev * 1.0 / hr.sum_rev) * 100, 2) share_of_rev
+from filial_rev fr 
+join hq_rev hr
+    on fr.hq_filial_id = hr.hq_filial_id
