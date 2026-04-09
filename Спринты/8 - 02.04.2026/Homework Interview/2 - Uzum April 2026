@@ -1,0 +1,137 @@
+#Задача №1 (SQL)
+
+select
+    coalesce(t1.user_id, t2.user_id) user_id,
+    t1.metric_1,
+    t2.metric_2
+from t1
+full join t2
+    on t1.user_id = t2.user_id
+
+#Задача №2 (SQL)
+
+with step_calc as (
+    select
+        user_id,
+        event_name,
+        case 
+            when event_name = 'VIEW' then 1
+            when event_name = 'INPUT' then 2
+            else 3
+        end step
+    from events
+),
+
+user_steps as (
+    select
+        step,
+        event_name,
+        count(distinct user_id) user_count
+    from step_calc
+    group by step, event_name
+)
+
+select
+    event_name,
+    step,
+    user_count,
+    (user_count * 1.0 / first_value(user_count) over(order by step)) * 100 cr_first_step,
+    (user_count * 1.0 / lag(user_count) over(order by step)) * 100 cr_previous_step
+from user_steps
+
+#Задача №3 (SQL)
+
+with platform_date_agg as (
+    select
+        platform,
+        date,
+        count(distinct user_id) user_count
+    from activity
+    group by platform, date
+),
+
+platform_agg as (
+    select
+        platform,
+        NULL as date,
+        count(distinct user_id) user_count
+    from activity
+    group by platform
+),
+
+date_agg as (
+    select
+        NULL as platform,
+        date,
+        count(distinct user_id) user_count
+    from activity
+    group by date
+)
+
+select *
+from platform_date_agg
+union all
+select *
+from platform_agg
+union all
+select * 
+from date_agg
+
+#Задача №4 (SQL)
+
+with min_dates as (
+    select
+        user_id,
+        date_trunc('month', min(date)) cohort_month
+    from activity
+    group by user_id
+),
+
+months_act as (
+    select
+        user_id,
+        date_trunc('month', date) act_month
+    from activity
+),
+
+period_calc as (
+    select
+        user_id,
+        (extract(year from act_month) - extract(year from cohort_month)) * 12 + (extract(month from act_month) - extract(month from cohort_month)) period
+    from months_act ma
+    join min_dates md
+        on ma.user_id = md.user_id
+),
+
+agg_df as (
+    select
+        cohort_month cohort_start_month,
+        period,
+        count(distinct user_id) user_count_month
+    from min_dates md
+    join period_calc pc
+        on md.user_id = pc.user_id
+    group by cohort_month, period
+),
+
+all_cohort_users as (
+    select
+        cohort_start_month,
+        count(user_id) user_count_start_month
+    from min_dates
+    group by cohort_start_month
+)
+
+select
+    ad.cohort_start_month,
+    ad.cohort_start_month + (period || ' months')::interval AS cohort_month,
+    period,
+    user_count_start_month,
+    user_count_month,
+    round(user_count_month * 100 / nullif(user_count_start_month, 0), 2) RR
+from agg_df ad
+join all_cohort_users acu
+    on ad.cohort_start_month = acu.cohort_start_month
+order by cohort_start_month, period
+
+

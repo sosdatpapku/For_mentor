@@ -1,0 +1,37 @@
+# Задача №1 (SQL)
+
+select
+    floor(sales / 50) * 50 range_start,
+    floor(sales / 50) * 50 + 50 range_to,
+    count(*) orders_cnt,
+    sum(sales) sum_revenue
+from values_table
+group by floor(sales / 50)
+order by floor(sales / 50)
+
+# Задача №2 (SQL)
+
+select
+    client_id,
+    case when min(year(date)) = 2022 then 'New'
+        when max(year(date)) = 2022 
+            and min(year(date)) = 2021 then 'LFL'
+        else 'Churn'
+    end client_type
+from clients
+group by client_id
+
+select distinct
+    client_id,
+    case when min(year(date)) over(partition by client_id) = 2022 then 'New'
+        when max(year(date)) over(partition by client_id) = 2022 
+            and min(year(date)) over(partition by client_id) = 2021 then 'LFL'
+        else 'Churn'
+    end client_type
+from clients
+
+# Задача №3 (Кейс)
+
+1) Не совсем понятно был ли баннер в одном из двух магазов или сразу в двух магазах.
+    Если был только в одном, то используем Diff in diff, causal impact и синтетический контроль. Как квази-контроль можно взять оставшийся магазин
+    Если сразу в обоих был новый баннер, то используем те же методы, но для квази-контроля придется искать варианты среди других магазинов сети.

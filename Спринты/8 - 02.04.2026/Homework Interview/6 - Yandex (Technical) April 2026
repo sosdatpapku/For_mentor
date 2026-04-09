@@ -1,0 +1,111 @@
+#Задача №1 (SQL)
+with duration as (
+    select
+        user_id,
+        city,
+        sum(order_duration) sum_duration
+    from user_orders
+    group by user_id, city
+),
+
+ranked as (
+    select
+        user_id,
+        city,
+        sum_duration,
+        percent_rank() over(partition by city order by sum_duration desc) prc_rank
+    from duration
+)
+
+select
+    user_id,
+    city,
+    sum_duration
+from ranked
+where prc_rank <= 0.05
+order by city, sum_duration desc
+
+#Задача №2 (Python)
+
+def find_mode(nums):
+    if len(nums) == 0:
+        return False
+
+    nums_dict = {}
+    for num in nums:
+        nums_dict[num] = nums_dict.get(num, 0) + 1
+
+    mode = max(nums_dict, key=nums_dict.get)
+    res = []
+
+    for item, counts in nums_dict.items():
+        if counts == mode:
+            res.append(item)
+
+    return res
+
+#Задача №3 (Python)
+def find_largest_str(s, k):
+    if len(s) <= k:
+        return len(s)
+    
+    left = 0
+    char_dict = {}
+    max_str = 0
+    
+    for right in range(len(s)):
+        char_dict[s[right]] = char_dict.get(s[right], 0) + 1
+        
+        while len(char_dict) > k:
+            char_dict[s[left]] -= 1
+            if char_dict[s[left]] == 0:
+                del char_dict[s[left]]
+            left += 1
+        
+        max_str = max(max_str, right - left + 1)
+        
+    return max_len
+
+#Задача №4 (SQL)
+
+with active_users as (
+    select distinct
+        phone_id
+    from phones
+    where activity_flag = 1
+        and current_date > registaration_date
+        and registaration_date >= current_date - interval '1 year'
+),
+
+uber_users as (
+    select distinct
+        phone_id,
+        install_id
+    from installs
+    where app_name = 'Uber'
+        and is_deleted = 0
+),
+
+total_revenue as (
+    select
+        i.phone_id,
+        sum(o.amount) sum_amount
+    from orders o
+    join uber_users us
+        on o.install_id = us.install_id
+    where o.service_name = 'taxi'
+        and o.order_cancelled_flag = 0
+        and o.order_date >= current_date - interval '1 month'
+    group by i.phone_id
+    having sum(o.amount) > 15000
+)
+
+select
+    au.phone_id
+from active_users au
+join total_revenue tr
+    on au.phone_id = tr.phone_id
+
+
+
+    

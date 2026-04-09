@@ -1,0 +1,80 @@
+#Задача №1 (Теорвер)
+
+1) В случае, если при первом броске выпало < 4, то перебрасываем кубик и забираем,
+    иначе забираем выигрыш после первого броска.
+2) Матожидание стратегии = Вероятность первого исхода * Матожидание первого исхода + Вероятность второго исхода * Матожидание второго исхода
+Матожидание первого исхода = ((1+2+3+4+5+6) / 6 + (1+2+3+4+5+6) / 6) / 2 = 3.5
+Матожидание второго исхода = (4+5+6) / 3 = 5
+Матожидание стратегии = 0.5 * 3.5 + 0.5 * 5 = 4.25
+
+#Задача №2 (АБ)
+
+1) Конверсия в открытие хотя бы одного нового счета - z-тест на пропорции
+2) Средний суммарный баланс по всем счетам клиента - двувыборочный t-тест или бутстрап
+3) Средний баланс на счете - линеаризация + t-тест 
+4) Медианный баланс на счете - бутстрап
+
+
+#Задача №3 (SQL)
+
+with duration_calc as (
+    select
+        user_id,
+        session_id,
+        start_time,
+        start_time - lag(start_time) over(partition by user_id order by start_time, session_id) prev_session_gap,
+        lead(start_time) over(partition by user_id order by start_time, session_id) - start_time next_session_gap,
+        case
+            when row_number() over(partition by user_id order by start_time, session_id) = 1
+                then 1
+            else 0
+        end is_first,
+        case
+            when row_number() over(partition by user_id order by start_time desc, session_id desc) = 1
+                then 1
+            else 0
+        end is_last
+    from user_sessions
+)
+
+select *
+from duration_calc
+
+#Задача №4 (SQL)
+
+with rn_data as (
+    select
+        user_id,
+        dttm,
+        action,
+        row_number() over(partition by user_id order by dttm desc) rn # можно использовать rank, если хотим вытаскивать несколько записей с одинаковым временем 
+    from user_logs
+)
+
+select
+    user_id,
+    dttm,
+    action
+from rn_data
+where rn = 1
+
+#Задача №5 (Python)
+
+def change(customer_value):
+    if customer_value < 1:
+        return {10: 0, 5: 0, 1: 0}
+    
+    change_dict = {10:0, 5:0, 1:0}
+    
+    while customer_value != 0:
+        if customer_value >= 10:
+            change_dict[10] += customer_value // 10
+            customer_value = customer_value % 10
+        if customer_value >= 5 and customer_value < 10:
+            change_dict[5] += customer_value // 5
+            customer_value = customer_value % 5
+        else:
+            change_dict[1] += customer_value // 1
+            customer_value = customer_value % 1
+    
+    return change_dict
