@@ -1,0 +1,91 @@
+# Задача №1 (SQL)
+1) from
+2) join
+3) where
+4) group by
+5) having
+6) select
+7) distinct
+8) order by
+9) limit / offset
+
+# Задача №2 (SQL)
+where - для фильрации неагригированных данных
+having - для фильтрации агрегированных данных по group by
+
+# Задача №3 (SQL)
+оконки - применяют функцию к полям в партиции без агрегации исходных данных (оставляют исходный размер таблицы)
+агрегатные функции - применяют функцию к полям в таблице, схклопывая данные
+
+# Задача №4 (SQL)
+inner join - соединение по условию (пересечение множеств)
+left join / right join - соединение по условию, но оставляет записи из левой/правой таблицы, даже если не нашли совпадение по условию соединения
+cross join - соединение всех записей одной таблицы со всеми записями из другой
+full join - возвращает все записи, когда есть совпадения в левой или правой таблице
+self join - соединение таблицы самой с собой
+
+# Задача №5 (SQL)
+
+select
+    emp.employee_id,
+    emp.salary
+from employees emp
+inner join employees man
+    on emp.manager_id = man.employee_id
+where emp.salary > man.salary
+
+# Задача №6 (SQL)
+
+select
+    customer_id,
+    dt,
+    sum(value) over(partition by customer_id order by dt) cum_sum
+from table1
+order by customer_id, dt
+
+# Задача №7 (SQL)
+
+select
+    u.user_id
+from users u
+inner join messages m
+    on u.user_id = m.user_id
+group by u.user_id
+having count(message_id) > 3
+
+# Задача №8 (SQL)
+
+with calc_sum as (
+    select
+        o.order_id,
+        count(oi.order_id) items_cnt
+    from orders o
+    inner join order_items oi
+        on o.order_id = oi.order_id
+    group by o.order_id
+)
+
+select
+    items_cnt,
+    count(items_cnt) order_size_freq
+from calc_sum
+group by items_cnt
+order by count(items_cnt) desc
+
+
+# Задача №9 (Pandas)
+
+df = pd.read_excel(path='/home')
+df['date'] = pd.to_datetime(df['date']).dt.date
+
+agg_df = df.groupby(['date', 'action'], as_index=False).agg(uniq_users=('user_id', 'nunique'))
+
+pivot_df = agg_df.pivot(index='date', columns='action', values='uniq_users').fillna(0)
+expected_order = ['view_banner', 'click_banner', 'add_to_cart', 'purchase']
+pivot_df = pivot_df.reindex(columns=expected_order, fill_value=0)
+
+# Задача №10 (Pandas)
+
+pivot_df['cr_view_to_click'] = (pivot_df['click_banner'] / pivot_df['view_banner'] * 100).round(2)
+pivot_df['cr_click_to_add']  = (pivot_df['add_to_cart'] / pivot_df['click_banner'] * 100).round(2)
+pivot_df['cr_add_to_purchase'] = (pivot_df['purchase'] / pivot_df['add_to_cart'] * 100).round(2)

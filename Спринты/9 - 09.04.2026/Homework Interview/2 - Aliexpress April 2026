@@ -1,0 +1,105 @@
+#Задача №1 (SQL)
+select
+    emp.fullname,
+    emp.salary,
+    man.fullname
+from employees emp
+inner join employees man
+    on emp.manager_id = man.id
+where emp.salary > man.salary
+
+#Задача №2 (SQL)
+
+with sum_value as (
+    select
+        user_id,
+        order_dt,
+        sum(gmv) over(partition by user_id order by order_dt) cum_sum
+    from orders
+    where year(getdate()) = year(order_dt)
+),
+
+filt_data as (
+    select
+        user_id,
+        order_dt,
+        cum_sum,
+        row_number() over(partition by user_id order by order_dt) rn
+    from sum_value
+    where cum_sum >= 10000
+)
+
+select
+    user_id,
+    order_dt
+from filt_data
+where rn = 1
+
+/* Альтернатива
+WITH user_orders AS (...),
+ranked AS (
+    SELECT *,
+        ROW_NUMBER() OVER (ORDER BY orders_cnt DESC) AS rn,
+        COUNT(*) OVER () AS total
+    FROM user_orders
+)
+SELECT 
+    user_id,
+    name,
+    orders_cnt
+FROM ranked
+WHERE rn <= CEILING(total * 0.05);
+*/
+
+#Задача №3 (SQL)
+
+with agg_df as (
+    select
+        u.user_id,
+        u.name,
+        count(distinct o.order_id) orders_cnt
+    from users u
+    inner join orders o
+        on u.user_id = o.user_id
+    where status = 'done'
+    group by u.user_id, u.name
+),
+
+rank_df as (
+    select
+        user_id,
+        name,
+        orders_cnt,
+        percent_rank() over(order by orders_cnt desc) rank
+    from agg_df
+)
+
+select
+    user_id,
+    name,
+    orders_cnt
+from rank_df
+where rank <= 0.05
+order by orders_cnt desc
+
+#Задача №4 (Python)
+
+def find_target(nums, target):
+    sort_nums = sorted(nums)
+    min_t, max_t = float('inf'), float('-inf')
+
+    for i in range(len(sort_nums)):
+        if sort_nums[i] == target:
+            if min_t > i:
+                min_t = i
+            if max_t < i:
+                max_t = i
+    if max_t != float('-inf') and min_t != float('inf'):
+      return [min_t, max_t]
+    else:
+      return [-1, -1]
+            
+#Задача №5 (Python)
+1) Создает новый столбец res, где для каждой ставится 1 или 0: 1 если значение в столбце col == 2, иначе 0
+2) В цикле проходит по каждой строке df, на каждой итерации вызывает iterrows, который возвращает пару (индекс, строка), 
+    но эта пара не используется, поэтому это пустой цикл

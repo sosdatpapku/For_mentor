@@ -1,0 +1,47 @@
+#Задача №1 (SQL)
+with filt_df as (
+    select
+        c.client_id,
+        c.name,
+        coalesce(sum(t.amount), 0) sum_amount
+    from clients c
+    left join transactions t
+        on c.client_id = t.client_id
+        and t.transaction_date = '2014-10-25'
+    where '2014-10-25' between t.start_dt and t.end_dt
+    group by c.client_id, c.name
+)
+
+select *
+from filt_df
+
+#Задача №2 (SQL)
+
+with atm_state as (
+    select
+        id,
+        location,
+        install_date,
+        row_number() over(partition by id order by install_date desc) rn
+    from atm
+    where install_date <= '2020-01-01'
+)
+
+select
+    id,
+    location,
+    install_date
+from atm_state
+where rn = 1
+
+#Задача №3 (SQL)
+
+select
+    t1.id
+    case when t1.start_dt > t2.start_dt then t1.start_dt else t2.start_dt end start_dt,
+    case when t1.end_dt < t2.end_dt then t1.end_dt else t2.end_dt end end_dt
+from table1 t1
+join table2 t2
+    on t1.id = t2.id
+        and t1.start_dt <= t2.end_dt 
+        and t2.start_dt <= t1.end_dt
